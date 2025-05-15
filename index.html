@@ -1,39 +1,249 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>My Map</title>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
+  <title>Interactive Map with Questions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"
+  />
   <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
     #map {
-      height: 600px;
-      width: 100%;
+      height: 500px;
+    }
+    #controls {
+      padding: 1em;
+      background: #f5f5f5;
+    }
+    select,
+    button,
+    input {
+      padding: 0.5em;
+      margin-right: 0.5em;
+      margin-top: 0.5em;
+    }
+    label {
+      margin-right: 0.2em;
     }
   </style>
 </head>
 <body>
-  <h1>My Map</h1>
+  <div id="controls">
+    <h2>Add Question</h2>
+
+    <label for="categorySelect">Question Category:</label>
+    <select id="categorySelect">
+      <option value="">-- Select Category --</option>
+      <option value="matching">MATCHING</option>
+      <option value="measuring">MEASURING</option>
+      <option value="thermometer">THERMOMETER</option>
+      <option value="radar">RADAR</option>
+    </select>
+
+    <div id="optionContainer" style="display:none; margin-top:0.5em;">
+      <label for="optionSelect">Select Option:</label>
+      <select id="optionSelect"></select>
+    </div>
+
+    <div
+      id="singleLatLng"
+      style="margin-top: 1em; display: none; align-items: center;"
+    >
+      <label for="latInput">Latitude:</label>
+      <input
+        type="number"
+        id="latInput"
+        step="any"
+        placeholder="e.g. 38.8951"
+      />
+      <label for="lngInput" style="margin-left: 1em;">Longitude:</label>
+      <input
+        type="number"
+        id="lngInput"
+        step="any"
+        placeholder="e.g. -77.0364"
+      />
+      <button id="addSingleBtn" style="margin-left: 1em;">Add</button>
+    </div>
+
+    <div id="doubleLatLng" style="margin-top: 1em; display: none;">
+      <div style="display: flex; align-items: center;">
+        <label for="latInput1">Latitude 1:</label>
+        <input
+          type="number"
+          id="latInput1"
+          step="any"
+          placeholder="e.g. 38.8951"
+        />
+        <label for="lngInput1" style="margin-left: 1em;">Longitude 1:</label>
+        <input
+          type="number"
+          id="lngInput1"
+          step="any"
+          placeholder="e.g. -77.0364"
+        />
+        <button id="addDoubleBtn1" style="margin-left: 1em;">Add</button>
+      </div>
+      <div
+        style="margin-top: 0.5em; display: flex; align-items: center;"
+      >
+        <label for="latInput2">Latitude 2:</label>
+        <input
+          type="number"
+          id="latInput2"
+          step="any"
+          placeholder="e.g. 38.9000"
+        />
+        <label for="lngInput2" style="margin-left: 1em;">Longitude 2:</label>
+        <input
+          type="number"
+          id="lngInput2"
+          step="any"
+          placeholder="e.g. -77.0400"
+        />
+        <button id="addDoubleBtn2" style="margin-left: 1em;">Add</button>
+      </div>
+    </div>
+  </div>
+
   <div id="map"></div>
 
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script>
-    // Initialize map
-    var map = L.map('map').setView([51.505, -0.09], 13); // London coords
 
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
+  <script>
+    const categorySelect = document.getElementById("categorySelect");
+    const optionContainer = document.getElementById("optionContainer");
+    const optionSelect = document.getElementById("optionSelect");
+    const singleLatLng = document.getElementById("singleLatLng");
+    const doubleLatLng = document.getElementById("doubleLatLng");
+
+    // Dummy options for matching/measuring (add your full list as needed)
+    const categoryOptions = {
+      matching: [
+        { value: "airport", text: "Airport" },
+        { value: "transit_line", text: "Transit Line" },
+        {value: "station_name_length", text: "Station Name Length"},
+        {value: "admin_division_1", text: "1st Admin Division"},
+        {value: "admin_division_2", text: "2nd Admin Division"},
+        {value: "admin_division_3", text: "3rd Admin Division"},
+        {value: "admin_division_4", text: "4th Admin Division"},
+        {value: "mountain", text: "Mountain"},
+        {value: "park", text: "Park"},
+        {value: "amusement_park", text: "Amusement Park"},
+        {value: "zoo", text: "Zoo"},
+        {value: "aquarium", text: "Aquarium"},
+        {value: "golf_course", text: "Golf Course"},
+        {value: "museum", text: "Museum"},
+        {value: "movie_theater", text: "Movie Theater"},
+        {value: "hospital", text: "Hospital"},
+        {value: "library", text: "Library"},
+        {value: "foreign_consulate", text: "Foreign Consulate"},
+      ],
+      measuring: [
+        { value: "airport", text: "Airport" },
+        { value: "transit_station", text: "Transit Station" },
+        {value: "admin_border_1", text: "1st Admin Border"},
+        {value: "admin_border_2", text: "2nd Admin Border"},
+        {value: "sea_level", text: "Sea Level"},
+        {value: "body_of_water", text: "Body of Water"},
+        {value: "coast_line", text: "Coast Line"},
+        {value: "mountain", text: "Mountain"},
+        {value: "park", text: "Park"},
+        {value: "amusement_park", text: "Amusement Park"},
+        {value: "zoo", text: "Zoo"},
+        {value: "aquarium", text: "Aquarium"},
+        {value: "golf_course", text: "Golf Course"},
+        {value: "museum", text: "Museum"},
+        {value: "movie_theater", text: "Movie Theater"},
+        {value: "hospital", text: "Hospital"},
+        {value: "library", text: "Library"},
+        {value: "foreign_consulate", text: "Foreign Consulate"},
+      ],
+    };
+
+    categorySelect.addEventListener("change", () => {
+      const selectedCategory = categorySelect.value;
+
+      // Show/hide second dropdown for matching/measuring
+      if (selectedCategory === "matching" || selectedCategory === "measuring") {
+        optionContainer.style.display = "block";
+        optionSelect.innerHTML = "";
+        categoryOptions[selectedCategory].forEach((opt) => {
+          const option = document.createElement("option");
+          option.value = opt.value;
+          option.textContent = opt.text;
+          optionSelect.appendChild(option);
+        });
+      } else {
+        optionContainer.style.display = "none";
+        optionSelect.innerHTML = "";
+      }
+
+      // Show inputs based on category selection
+      if (selectedCategory === "thermometer") {
+        doubleLatLng.style.display = "block";
+        singleLatLng.style.display = "none";
+      } else if (selectedCategory) {
+        singleLatLng.style.display = "flex";
+        doubleLatLng.style.display = "none";
+      } else {
+        singleLatLng.style.display = "none";
+        doubleLatLng.style.display = "none";
+      }
+    });
+
+    // Map setup
+    const map = L.map("map").setView([38.889805, -77.009056], 12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors",
     }).addTo(map);
 
-    // Optional: Add a marker
-    L.marker([51.505, -0.09]).addTo(map)
-      .bindPopup('Hello from London!')
-      .openPopup();
+    // Track which lat/lng input is waiting for a click from user
+    let waitingForClick = null;
+
+    document
+      .getElementById("addSingleBtn")
+      .addEventListener("click", () => {
+        waitingForClick = "single";
+      });
+
+    document
+      .getElementById("addDoubleBtn1")
+      .addEventListener("click", () => {
+        waitingForClick = "double1";
+      });
+
+    document
+      .getElementById("addDoubleBtn2")
+      .addEventListener("click", () => {
+        waitingForClick = "double2";
+      });
+
+    map.on("click", function (e) {
+      if (!waitingForClick) return;
+
+      const lat = e.latlng.lat.toFixed(6);
+      const lng = e.latlng.lng.toFixed(6);
+
+      if (waitingForClick === "single") {
+        document.getElementById("latInput").value = lat;
+        document.getElementById("lngInput").value = lng;
+      } else if (waitingForClick === "double1") {
+        document.getElementById("latInput1").value = lat;
+        document.getElementById("lngInput1").value = lng;
+      } else if (waitingForClick === "double2") {
+        document.getElementById("latInput2").value = lat;
+        document.getElementById("lngInput2").value = lng;
+      }
+
+      waitingForClick = null; // reset after click
+    });
   </script>
 </body>
 </html>
